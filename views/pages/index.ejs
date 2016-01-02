@@ -54,7 +54,7 @@
 		}
 		function naturalLoss() {
 			if(mass >= 128) {
-				mass -= 5;
+				mass -= Math.round((Math.random()+2*6)+mass/200);
 			}
 		}
 		function eatFood() {
@@ -67,7 +67,7 @@
 			}
 			for(var i=0;i<index.length;++i) {
 				var f = food.splice(index[i],1)[0];
-				mass += f.size;
+				mass += Math.round(f.size);
 			}
 		}
 		function regenerateFood() {
