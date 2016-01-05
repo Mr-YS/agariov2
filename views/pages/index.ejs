@@ -17,9 +17,26 @@
 		var h = window.innerHeight;
 		var mouseX = w/2;
 		var mouseY = h/2;
+		var targetX;
+		var targetY;
+		var currX;
+		var currY;
 		var food = [];
 		var limit = 10;
 		var mass = 10;
+		var colorList = [
+			'Yellow',
+			'Aqua',
+			'Blue',
+			'Chartreuse',
+			'DarkOrange',
+			'DarkOrchid',
+			'DeepPink',
+			'Fuchsia',
+			'Gold',
+			'Red'
+		];
+		var cellColor = colorList[Math.floor(Math.random() * colorList.length)];
 		
 		$('#main').mousemove( function(event) {
 			mouseX = event.pageX;
@@ -46,7 +63,7 @@
 		function draw() {
 			ctx.clearRect(0,0 , ctx.canvas.width, ctx.canvas.height);
 			eatFood();
-			circle(mouseX, mouseY, mass, 'red');
+			circle(mouseX, mouseY, mass, cellColor);
 			drawText(mouseX,mouseY);
 			for(var i=0;i<food.length;++i) {
 				circle(food[i].x, food[i].y, food[i].size, food[i].color);
@@ -72,7 +89,7 @@
 		}
 		function regenerateFood() {
 			if(food.length < limit) {
-				var p = {color : 'orange', x : Math.random()*w, y : Math.random()*h, size : Math.random()*2+1};
+				var p = {color : colorList[Math.floor(Math.random()*colorList.length)], x : Math.random()*w, y : Math.random()*h, size : Math.random()*2+1};
 				var d = Math.sqrt(Math.pow(mouseX-p.x,2)+Math.pow(mouseY-p.y,2));
 				if(d > mass+p.size) {
 					food.push(p);		
@@ -83,10 +100,13 @@
 			ctx.beginPath();
 			ctx.arc(x, y, r, 0, 2*Math.PI);
 			ctx.strokeStyle = color;
+			ctx.fillStyle = color;
+			ctx.fill();
 			ctx.stroke();
 		}
 		function drawText(x,y) {
 			ctx.font = '24px Arial';
+			ctx.strokeStyle = 'black';
 			ctx.strokeText(mass,x,y);
 		}
 	</script>
