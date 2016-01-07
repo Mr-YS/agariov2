@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Mr-YS/agariov2.git"
+    "url": "git+https://github.com/Mr-YS/stemFair2016.git"
   },
   "author": "Yoonsang",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Mr-YS/agariov2/issues"
+    "url": "https://github.com/Mr-YS/stemFair2016/issues"
   },
-  "homepage": "https://github.com/Mr-YS/agariov2#readme",
+  "homepage": "https://github.com/Mr-YS/stemFair2016#readme",
   "dependencies": {
     "body-parser": "^1.14.1",
     "connect-flash": "^0.1.1",
