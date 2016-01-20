@@ -13,10 +13,12 @@
 	<canvas id="main" />
 	<script>
 		var ctx = $('#main')[0].getContext('2d');
+		var mapWidth = 10000;
+		var mapHeight = 10000;
 		var w = window.innerWidth;
 		var h = window.innerHeight;
-		var targetX;
-		var targetY;
+		var targetX = w/2;
+		var targetY = h/2;
 		var currX = w/2;
 		var currY = h/2;
 		var food = [];
@@ -62,6 +64,9 @@
 			ctx.clearRect(0,0 , ctx.canvas.width, ctx.canvas.height);
 			currX = currX+(targetX-currX)/mass;
 			currY = currY+(targetY-currY)/mass;
+			if(currX < 0 || currX > mapWidth || currY < 0 || currY > mapHeight){
+				return -1;
+			}
 			eatFood();
 			circle(currX, currY, mass, cellColor);
 			drawText(currX,currY);
@@ -89,7 +94,7 @@
 		}
 		function regenerateFood() {
 			if(food.length < limit) {
-				var p = {color : colorList[Math.floor(Math.random()*colorList.length)], x : Math.random()*w, y : Math.random()*h, size : Math.random()*2+1};
+				var p = {color : colorList[Math.floor(Math.random()*colorList.length)], x : Math.random()*mapWidth , y : Math.random()*mapHeight, size : Math.random()*2+1};
 				var d = Math.sqrt(Math.pow(currX-p.x,2)+Math.pow(currY-p.y,2));
 				if(d > mass+p.size) {
 					food.push(p);		
