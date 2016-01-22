@@ -21,6 +21,8 @@
 		var targetY = h/2;
 		var currX = w/2;
 		var currY = h/2;
+		var a = 0;
+		var b = 0;
 		var food = [];
 		var limit = 10;
 		var mass = 10;
@@ -61,7 +63,9 @@
 		function init() {
 		}
 		function draw() {
-			ctx.clearRect(0,0 , ctx.canvas.width, ctx.canvas.height);
+			a = currX - ctx.canvas.width/2;
+			b = currY - ctx.canvas.height/2;
+			ctx.clearRect(a,b , a+ctx.canvas.width, b+ctx.canvas.height);
 			currX = currX+(targetX-currX)/mass;
 			currY = currY+(targetY-currY)/mass;
 			if(currX < 0 || currX > mapWidth || currY < 0 || currY > mapHeight){
