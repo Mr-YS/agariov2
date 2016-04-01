@@ -17,16 +17,11 @@
 		var mapHeight = 5000;
 		var w = window.innerWidth;
 		var h = window.innerHeight;
-		var targetX = w/2;
-		var targetY = h/2;
-		var currX = w/2;
-		var currY = h/2;
 		var cameraX = mapWidth/2;
 		var cameraY = mapHeight/2;
 		var mousePositionX = w/2;
 		var mousePositionY = h/2;
-		var a = 0;
-		var b = 0;
+		var scale = 1;
 		var food = [];
 		var limit = 30000;
 		var mass = 10;
@@ -81,19 +76,17 @@
 			else if(cameraY>mapHeight){
 				cameraY = mapHeight;
 			}
-			a = currX - ctx.canvas.width/2;
-			b = currY - ctx.canvas.height/2;
 			ctx.clearRect(0 ,0 ,ctx.canvas.width,ctx.canvas.height);
-			currX = currX+(targetX-currX)/mass;
-			currY = currY+(targetY-currY)/mass;
-			if(currX < 0 || currX > mapWidth || currY < 0 || currY > mapHeight){
-				return -1;
-			}
 			eatFood();
+			var rx = scale*w;
+			var ry = scale*h;
 			for(var i=0;i<food.length;++i) {
-				circle(food[i].x-cameraX+w/2, food[i].y-cameraY+h/2, 5, food[i].color);
+				if((cameraX-rx/2)<food[i].x && (cameraX+rx/2)>food[i].x && (cameraY-ry/2)<food[i].y && (cameraY+ry/2)>food[i].y){
+					circle((food[i].x-cameraX)/scale+w/2, (food[i].y-cameraY)/scale+h/2, 5/scale, food[i].color);
+				}
 			}
-			circle(w/2, h/2, mass, cellColor);
+			scale = mass>=128 ? mass/128 : 1;
+			circle(w/2, h/2, mass/scale, cellColor);
 			drawText(w/2, h/2);
 		}
 		function naturalLoss() {
@@ -105,7 +98,7 @@
 			var index = [];
 			for(var i=0;i<food.length;++i) {
 				var d = Math.sqrt(Math.pow(cameraX-food[i].x,2)+Math.pow(cameraY-food[i].y,2));
-				if(d <= mass) {
+				if(d <= mass/scale) {
 					index.push(i);	
 				}
 			}
