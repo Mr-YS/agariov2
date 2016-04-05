@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<script src="http://underscorejs.org/underscore-min.js"></script>
 	<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
 	<link rel="stylesheet" href="http://meyerweb.com/eric/tools/css/reset/reset.css" />
 	<style>
@@ -21,10 +22,12 @@
 		var cameraY = mapHeight/2;
 		var mousePositionX = w/2;
 		var mousePositionY = h/2;
+		var count = 1;
 		var scale = 1;
+		var cells = [];
 		var food = [];
-		var limit = 30000;
-		var mass = 10;
+		var limit = 3000;
+		var mass = 10; //total mass
 		var colorList = [
 			'Yellow',
 			'Aqua',
@@ -38,7 +41,11 @@
 			'Red'
 		];
 		var cellColor = colorList[Math.floor(Math.random() * colorList.length)];
-		
+		$(window).keydown( function(event) { 
+			if(event.keyCode === 32){
+				split();
+			}
+		});
 		$('#main').mousemove( function(event) {
 			mousePositionX = event.pageX-w/2;
 			mousePositionY = event.pageY-h/2;
@@ -54,30 +61,28 @@
 			canvasResize();
 		});
 		function canvasResize() {
-			w = window.innerWidth;
-			h = window.innerHeight;
-			ctx.canvas.width = w;
-			ctx.canvas.height = h;
+			ctx.canvas.width = w = window.innerWidth;
+			ctx.canvas.height = h = window.innerHeight;
 		}
 		function init() {
+			cells.push({
+				mass:10,
+				x:cameraX,
+				y:cameraY
+			});
 		}
 		function draw() {
-			cameraX += (mousePositionX/(mass/1.5));
-			cameraY += (mousePositionY/(mass/1.5));
-			if(cameraX<0){
-				cameraX = 0;
+			var bc = _.max(cells,function(cell){ return cell.mass;});
+			var mvSize = Math.sqrt(Math.pow(mousePositionX, 2) + Math.pow(mousePositionY, 2));
+			if(mvSize > 10){
+				cameraX = Math.min(mapWidth,Math.max(0,cameraX + mousePositionX/mvSize/bc.mass*100));
+				cameraY = Math.min(mapHeight,Math.max(0,cameraY + mousePositionY/mvSize/bc.mass*100));
 			}
-			else if(cameraX>mapWidth){
-				cameraX = mapWidth;
-			}
-			if(cameraY<0){
-				cameraY = 0;
-			}
-			else if(cameraY>mapHeight){
-				cameraY = mapHeight;
+			for(var i=0;i<cells.length;++i){
+				cells[i].x += ((cameraX-cells[i].x));
+				cells[i].y += ((cameraY-cells[i].y));
 			}
 			ctx.clearRect(0 ,0 ,ctx.canvas.width,ctx.canvas.height);
-			eatFood();
 			var rx = scale*w;
 			var ry = scale*h;
 			for(var i=0;i<food.length;++i) {
@@ -86,25 +91,58 @@
 				}
 			}
 			scale = mass>=128 ? mass/128 : 1;
-			circle(w/2, h/2, mass/scale, cellColor);
-			drawText(w/2, h/2);
-		}
-		function naturalLoss() {
-			if(mass >= 128) {
-				mass -= 0.02*(Math.random()*(mass-128));
+			collisionCheck();
+			for(var i=0;i<cells.length;++i) {
+				eatFood(i);
+				drawCell(i);
 			}
 		}
-		function eatFood() {
+		function collisionCheck() {
+			for(var i=0;i<cells.length-1;++i){
+				for(var j=i+1;j<cells.length;++j){
+					var dc = Math.sqrt(Math.pow(cells[i].x-cells[j].x,2)+Math.pow(cells[i].y-cells[j].y,2));
+					if(dc<(cells[i].mass+cells[j].mass)){
+						if(cells[i].x < cells[j].x){
+							cells[i].x -= cells[i].mass;
+							cells[j].x += cells[j].mass;
+							cells[i].y -= 10;
+							cells[j].y += 10;	
+						}
+						else{
+							cells[i].x += cells[i].mass;
+							cells[j].x -= cells[j].mass;
+							cells[i].y += 10;
+							cells[j].y -= 10;
+						}
+					}
+				}
+			}
+		}
+		function drawCell(i) { 
+			circle((cells[i].x-cameraX)/scale+w/2, (cells[i].y-cameraY)/scale+h/2, cells[i].mass/scale, cellColor);
+			ctx.font = '24px Arial';
+			ctx.strokeStyle = 'black';
+			ctx.strokeText(Math.round(cells[i].mass),(cells[i].x-cameraX)/scale+w/2,(cells[i].y-cameraY)/scale+h/2);
+		}
+		function naturalLoss() {
+			for(var i=0;i<cells.length;++i){
+				if(cells[i].mass >= 128) {
+					cells[i].mass -= 0.02*(Math.random()*(cells[i].mass-128));
+				}
+			}
+		}
+		function eatFood(j) {
 			var index = [];
 			for(var i=0;i<food.length;++i) {
-				var d = Math.sqrt(Math.pow(cameraX-food[i].x,2)+Math.pow(cameraY-food[i].y,2));
-				if(d <= mass/scale) {
+				var d = Math.sqrt(Math.pow(cells[j].x-food[i].x,2)+Math.pow(cells[j].y-food[i].y,2));
+				if(d <= cells[j].mass) {
 					index.push(i);	
 				}
 			}
 			for(var i=0;i<index.length;++i) {
 				var f = food.splice(index[i],1)[0];
-				var c = Math.round(mass / 10);
+				var c = Math.round(cells[j].mass / 10);
+				cells[j].mass += (f.size/c);
 				mass += (f.size/c);
 			}
 		}
@@ -125,10 +163,15 @@
 			ctx.fill();
 			ctx.stroke();
 		}
-		function drawText(x,y) {
-			ctx.font = '24px Arial';
-			ctx.strokeStyle = 'black';
-			ctx.strokeText(Math.round(mass),x,y);
+		function split() {
+			count = Math.min(16,count*2);
+			if(count > 16){
+				return;
+			}
+			else{
+				console.log(count);
+				cells.push({mass:10,x:cameraX,y:cameraY});
+			}
 		}
 	</script>
 </body>
