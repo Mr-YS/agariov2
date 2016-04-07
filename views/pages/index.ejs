@@ -2,7 +2,8 @@
 <html>
 <head>
 	<script src="http://underscorejs.org/underscore-min.js"></script>
-	<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+	<!--<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script-->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
 	<link rel="stylesheet" href="http://meyerweb.com/eric/tools/css/reset/reset.css" />
 	<style>
 		body {
@@ -68,20 +69,31 @@
 			cells.push({
 				mass:10,
 				x:cameraX,
-				y:cameraY
+				y:cameraY,
+				targetX:cameraX,
+				targetY:cameraY,
+				time:0		
 			});
 		}
-		function draw() {
+		function move() {
+			var targetX = mousePositionX+cameraX;
+			var targetY = mousePositionY+cameraY;
 			var bc = _.max(cells,function(cell){ return cell.mass;});
-			var mvSize = Math.sqrt(Math.pow(mousePositionX, 2) + Math.pow(mousePositionY, 2));
-			if(mvSize > 10){
-				cameraX = Math.min(mapWidth,Math.max(0,cameraX + mousePositionX/mvSize/bc.mass*100));
-				cameraY = Math.min(mapHeight,Math.max(0,cameraY + mousePositionY/mvSize/bc.mass*100));
-			}
+			cameraX = _.reduce(cells, function(memo, num){return memo+num.x;},0)/cells.length;
+			cameraY = _.reduce(cells, function(memo, num){return memo+num.y;},0)/cells.length;
 			for(var i=0;i<cells.length;++i){
-				cells[i].x += ((cameraX-cells[i].x));
-				cells[i].y += ((cameraY-cells[i].y));
+				cells[i].time++;
+				var v = 2;
+				if(cells[i].time >= 0){
+					cells[i].targetX = targetX;
+					cells[i].targetY = targetY;
+					v = 5;	
+				}
+				cells[i].x = Math.max(0,Math.min(mapWidth,cells[i].x+(cells[i].targetX-cells[i].x)/cells[i].mass/v));
+				cells[i].y = Math.max(0,Math.min(mapHeight,cells[i].y+(cells[i].targetY-cells[i].y)/cells[i].mass/v));
 			}
+		}
+		function draw() {
 			ctx.clearRect(0 ,0 ,ctx.canvas.width,ctx.canvas.height);
 			var rx = scale*w;
 			var ry = scale*h;
@@ -92,6 +104,7 @@
 			}
 			scale = mass>=128 ? mass/128 : 1;
 			collisionCheck();
+			move();
 			for(var i=0;i<cells.length;++i) {
 				eatFood(i);
 				drawCell(i);
@@ -102,18 +115,7 @@
 				for(var j=i+1;j<cells.length;++j){
 					var dc = Math.sqrt(Math.pow(cells[i].x-cells[j].x,2)+Math.pow(cells[i].y-cells[j].y,2));
 					if(dc<(cells[i].mass+cells[j].mass)){
-						if(cells[i].x < cells[j].x){
-							cells[i].x -= cells[i].mass;
-							cells[j].x += cells[j].mass;
-							cells[i].y -= 10;
-							cells[j].y += 10;	
-						}
-						else{
-							cells[i].x += cells[i].mass;
-							cells[j].x -= cells[j].mass;
-							cells[i].y += 10;
-							cells[j].y -= 10;
-						}
+						
 					}
 				}
 			}
@@ -156,21 +158,52 @@
 			}
 		}
 		function circle(x,y,r,color) {
-			ctx.beginPath();
-			ctx.arc(x, y, r, 0, 2*Math.PI);
-			ctx.strokeStyle = color;
+			var foseja = Math.random();
+			ctx.strokeStyle = 'black';
+			ctx.lineWidth = 1;
 			ctx.fillStyle = color;
+			ctx.beginPath();
+			ctx.moveTo(x+(foseja-0.5)*5,y+r);
+			for(var i=1;i<359;++i){
+				ctx.lineTo(Math.cos(i*Math.PI/180)*r+x+(Math.random()-0.5)*1.1,Math.sin(i*Math.PI/180)*r+y+(Math.random()-0.5)*5);
+			}
+			ctx.lineTo(x+(foseja-0.5)*5,y+r);
+			ctx.closePath();
 			ctx.fill();
 			ctx.stroke();
 		}
 		function split() {
-			count = Math.min(16,count*2);
-			if(count > 16){
+			if(count >= 16){
 				return;
 			}
 			else{
-				console.log(count);
-				cells.push({mass:10,x:cameraX,y:cameraY});
+				var cl = cells.length;
+				for(var i=0;i<cl;++i){
+					if(cells[i].mass > 9){
+						var e = cells[i].mass /= 2;
+						var a = Math.sqrt(Math.pow(mousePositionX,2)+Math.pow(mousePositionY,2));
+						if(a == 0){
+							a = 1;	
+						}
+console.log(a);
+						var targetX = mousePositionX/a+cells[i].x;
+						var targetY = mousePositionY/a+cells[i].y;
+						console.log(a + ' ' + mousePositionX / a + ' ' + mousePositionX);
+						console.log((targetX - cells[i].x) + ' ' + (targetY - cells[i].y));
+						cells.push({
+							mass:e,
+							x:cells[i].x,
+							y:cells[i].y,
+							targetX:targetX,
+							targetY:targetY,
+							time:-20
+						})
+						count ++;
+						if(count == 16){
+							return;
+						}
+					}
+				}
 			}
 		}
 	</script>
