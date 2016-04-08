@@ -26,7 +26,7 @@
 		var count = 1;
 		var scale = 1;
 		var cells = [];
-		var food = [];
+		var foods = [];
 		var limit = 3000;
 		var mass = 10; //total mass
 		var colorList = [
@@ -42,6 +42,66 @@
 			'Red'
 		];
 		var cellColor = colorList[Math.floor(Math.random() * colorList.length)];
+		function food(x,y,color,edge){
+			var self = this;
+			
+			self.x = x;
+			self.y = y;
+			self.color = color;
+			self.mass = 10;
+			self.edge = edge;
+			self.draw = function(){
+				var relX = (self.x - cameraX) / scale + w / 2;
+				var relY = (self.y - cameraY) / scale + h / 2;
+				
+				ctx.fillStyle = self.color;
+				ctx.beginPath();
+				ctx.moveTo(relX+self.mass, relY);
+				for(var i=1;i<self.edge;++i) {
+					ctx.lineTo(Math.cos(i*Math.PI/180*(360/(self.edge)))*self.mass+relX,Math.sin(i*Math.PI/180*(360/(self.edge)))*self.mass+relY);
+				}
+				ctx.lineTo(relX+self.mass, relY);
+				ctx.closePath();
+                        	ctx.fill();
+			}
+		}
+		function cell(x,y,mass,color){
+			var self = this;
+			
+			self.x = x;
+			self.y = y;
+			self.targetX = x;
+			self.targetY = y;
+			self.time = 0;
+			self.mass = mass;
+			self.color = color;
+			self.draw = function(){
+				var relX = (self.x - cameraX) / scale + w / 2;
+				var relY = (self.y - cameraY) / scale + h / 2;
+				var randX = Math.random();
+				var randY = Math.random();
+				
+				ctx.strokeStyle = 'black';
+				ctx.lineWidth = 5;
+				ctx.fillStyle = self.color;
+				ctx.beginPath();
+				ctx.moveTo(relX+self.mass+(randX-0.5)*1.1, relY + (randY - 0.5)*1.1);
+				for(var i=1;i<self.mass+10;++i) {
+					ctx.lineTo(Math.cos(i*Math.PI/180*(360/(self.mass+10)))*self.mass+relX+(Math.random()-0.5)*1.1,Math.sin(i*Math.PI/180*(360/(self.mass+10)))*self.mass+relY+(Math.random()-0.5)*1.1);
+				}
+				ctx.lineTo(relX+self.mass+(randX-0.5)*1.1, relY + (randY - 0.5)*1.1);
+				ctx.closePath();
+                        	ctx.fill();
+                        	ctx.stroke();
+				ctx.lineWidth = 1;
+				ctx.font = '24px Arial';
+                        	ctx.strokeStyle = 'black';
+                        	ctx.strokeText(Math.round(self.mass),(self.x-cameraX)/scale+w/2,(self.y-cameraY)/scale+h/2);
+			}
+			setInterval(function(){
+				self.time++;
+			},1000)
+		}
 		$(window).keydown( function(event) { 
 			if(event.keyCode === 32){
 				split();
@@ -66,14 +126,7 @@
 			ctx.canvas.height = h = window.innerHeight;
 		}
 		function init() {
-			cells.push({
-				mass:10,
-				x:cameraX,
-				y:cameraY,
-				targetX:cameraX,
-				targetY:cameraY,
-				time:0		
-			});
+			cells.push(new cell(cameraX,cameraY,10,cellColor));
 		}
 		function move() {
 			var targetX = mousePositionX+cameraX;
@@ -97,9 +150,9 @@
 			ctx.clearRect(0 ,0 ,ctx.canvas.width,ctx.canvas.height);
 			var rx = scale*w;
 			var ry = scale*h;
-			for(var i=0;i<food.length;++i) {
-				if((cameraX-rx/2)<food[i].x && (cameraX+rx/2)>food[i].x && (cameraY-ry/2)<food[i].y && (cameraY+ry/2)>food[i].y){
-					circle((food[i].x-cameraX)/scale+w/2, (food[i].y-cameraY)/scale+h/2, 5/scale, food[i].color);
+			for(var i=0;i<foods.length;++i) {
+				if((cameraX-rx/2)<foods[i].x && (cameraX+rx/2)>foods[i].x && (cameraY-ry/2)<foods[i].y && (cameraY+ry/2)>foods[i].y){
+					foods[i].draw();
 				}
 			}
 			scale = mass>=128 ? mass/128 : 1;
@@ -107,7 +160,7 @@
 			move();
 			for(var i=0;i<cells.length;++i) {
 				eatFood(i);
-				drawCell(i);
+				cells[i].draw();
 			}
 		}
 		function collisionCheck() {
@@ -120,12 +173,6 @@
 				}
 			}
 		}
-		function drawCell(i) { 
-			circle((cells[i].x-cameraX)/scale+w/2, (cells[i].y-cameraY)/scale+h/2, cells[i].mass/scale, cellColor);
-			ctx.font = '24px Arial';
-			ctx.strokeStyle = 'black';
-			ctx.strokeText(Math.round(cells[i].mass),(cells[i].x-cameraX)/scale+w/2,(cells[i].y-cameraY)/scale+h/2);
-		}
 		function naturalLoss() {
 			for(var i=0;i<cells.length;++i){
 				if(cells[i].mass >= 128) {
@@ -134,43 +181,28 @@
 			}
 		}
 		function eatFood(j) {
-			var index = [];
-			for(var i=0;i<food.length;++i) {
-				var d = Math.sqrt(Math.pow(cells[j].x-food[i].x,2)+Math.pow(cells[j].y-food[i].y,2));
+			var new_foods = [];
+			for(var i=0;i<foods.length;++i) {
+				var d = Math.sqrt(Math.pow(cells[j].x-foods[i].x,2)+Math.pow(cells[j].y-foods[i].y,2));
 				if(d <= cells[j].mass) {
-					index.push(i);	
+					var c = Math.round(cells[j].mass / 10);
+					cells[j].mass += (foods[i].mass/c);
+					mass += (foods[i].mass/c);
+				}
+				else {
+					new_foods.push(foods[i]);
 				}
 			}
-			for(var i=0;i<index.length;++i) {
-				var f = food.splice(index[i],1)[0];
-				var c = Math.round(cells[j].mass / 10);
-				cells[j].mass += (f.size/c);
-				mass += (f.size/c);
-			}
+			foods = new_foods;
 		}
 		function regenerateFood() {
-			if(food.length < limit) {
-				var p = {color : colorList[Math.floor(Math.random()*colorList.length)], x : Math.random()*mapWidth , y : Math.random()*mapHeight, size : Math.random()*2+1};
+			if(foods.length < limit) {
+				var p = new food(Math.random() * mapWidth, Math.random() * mapHeight, colorList[Math.floor(Math.random()*colorList.length)], Math.floor(Math.random() * 3 + 5));
 				var d = Math.sqrt(Math.pow(cameraY-p.x,2)+Math.pow(cameraY-p.y,2));
-				if(d > mass+p.size) {
-					food.push(p);		
+				if(d > mass+p.mass) {
+					foods.push(p);		
 				}
 			}
-		}
-		function circle(x,y,r,color) {
-			var foseja = Math.random();
-			ctx.strokeStyle = 'black';
-			ctx.lineWidth = 1;
-			ctx.fillStyle = color;
-			ctx.beginPath();
-			ctx.moveTo(x+(foseja-0.5)*5,y+r);
-			for(var i=1;i<359;++i){
-				ctx.lineTo(Math.cos(i*Math.PI/180)*r+x+(Math.random()-0.5)*1.1,Math.sin(i*Math.PI/180)*r+y+(Math.random()-0.5)*5);
-			}
-			ctx.lineTo(x+(foseja-0.5)*5,y+r);
-			ctx.closePath();
-			ctx.fill();
-			ctx.stroke();
 		}
 		function split() {
 			if(count >= 16){
@@ -179,25 +211,18 @@
 			else{
 				var cl = cells.length;
 				for(var i=0;i<cl;++i){
-					if(cells[i].mass > 9){
+					if(cells[i].mass > 29){
 						var e = cells[i].mass /= 2;
 						var a = Math.sqrt(Math.pow(mousePositionX,2)+Math.pow(mousePositionY,2));
 						if(a == 0){
 							a = 1;	
 						}
 console.log(a);
-						var targetX = mousePositionX/a+cells[i].x;
-						var targetY = mousePositionY/a+cells[i].y;
-						console.log(a + ' ' + mousePositionX / a + ' ' + mousePositionX);
-						console.log((targetX - cells[i].x) + ' ' + (targetY - cells[i].y));
-						cells.push({
-							mass:e,
-							x:cells[i].x,
-							y:cells[i].y,
-							targetX:targetX,
-							targetY:targetY,
-							time:-20
-						})
+						var newCell = new cell(cells[i].x,cells[i].y,e,cellColor);
+						newCell.time = -20;
+						newCell.targetX = mousePositionX/a+cells[i].x;
+						newCell.targetY = mousePositionY/a+cells[i].y;
+						cells.push(newCell);
 						count ++;
 						if(count == 16){
 							return;
